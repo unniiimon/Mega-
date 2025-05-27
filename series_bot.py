@@ -1,10 +1,11 @@
 import logging
 import os
-import json
+import re
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    InputFile,
 )
 from telegram.ext import (
     Updater,
@@ -16,6 +17,7 @@ from telegram.ext import (
 )
 from pymongo import MongoClient
 
+
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -26,6 +28,8 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 MONGO_URI = os.environ.get("MONGO_URI")
 PORT = int(os.environ.get("PORT", "8443"))  # default 8443 for HTTPS webhook use if needed
+PIC_URL = os.environ.get("PIC_URL")  # URL or file_id of the picture to send
+
 
 if not BOT_TOKEN or not MONGO_URI:
     logger.error("Missing BOT_TOKEN or MONGO_URI environment variables")
@@ -36,12 +40,16 @@ client = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True, serv
 db = client.series_bot_db
 series_collection = db.series
 
+
+
 # Set your admin Telegram user IDs here (replace with actual admin user IDs)
 ADMIN_IDS = {1426582599}  # Replace with your real Telegram user ID(s)
+
 
 # Helper function: Check if user is admin
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
+
 
 # Start command handler
 def start(update: Update, context: CallbackContext) -> None:
@@ -53,6 +61,7 @@ def start(update: Update, context: CallbackContext) -> None:
         "Or use /addseries command with JSON payload."
     )
 
+
 # Admin command - add series with JSON
 def addseries_command(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
@@ -63,6 +72,7 @@ def addseries_command(update: Update, context: CallbackContext) -> None:
     if context.args:
         json_text = " ".join(context.args)
         try:
+            import json
             data = json.loads(json_text)
             response = save_series_to_db(data)
             update.message.reply_text(response)
@@ -98,6 +108,7 @@ def handle_admin_json(update: Update, context: CallbackContext) -> None:
     if context.user_data.get("awaiting_series_json"):
         text = update.message.text
         try:
+            import json
             data = json.loads(text)
             response = save_series_to_db(data)
             update.message.reply_text(response)
@@ -139,6 +150,7 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
 
     message = update.message
 
+
     file_obj = None
     if message.document:
         file_obj = message.document
@@ -148,10 +160,12 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
         update.message.reply_text("Please send a document or video file with caption.")
         return
 
+
     caption = message.caption
     if not caption:
         update.message.reply_text("Please add a caption in format: SeriesName | Season | Quality")
         return
+
 
     parsed = parse_caption(caption)
     if not parsed:
@@ -160,6 +174,7 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
 
     series_name, season_key, quality_key = parsed
     file_id = file_obj.file_id
+
 
     series_name_key = series_name.strip().lower()
     episodes_key = None
@@ -187,14 +202,17 @@ def handle_admin_file(update: Update, context: CallbackContext) -> None:
         upsert=True
     )
 
+
     update.message.reply_text(
         f"Added/updated episode {episodes_key} of {series_name} season {season_key} quality {quality_key} successfully."
     )
+
 
 # When user sends text message (series name) in group or PM
 def handle_series_query(update: Update, context: CallbackContext) -> None:
     if update.message.text.startswith("/"):  # Ignore commands
         return
+
 
     text = update.message.text.strip().lower()
     series = series_collection.find_one({"name": text})
@@ -202,17 +220,22 @@ def handle_series_query(update: Update, context: CallbackContext) -> None:
         update.message.reply_text("Sorry, series not found in database.")
         return
 
-    # Redirect user to PM
-    if update.message.chat.type == "group":
-        context.bot.send_message(chat_id=update.effective_user.id, text=f"You requested the series: {text.title()}. Please check your PM for further actions.")
-        return
+    # Send a photo with a custom caption
+    if PIC_URL:
+        user_mention = update.message.from_user.mention_html()
+        caption = f"Hi {user_mention}, Select Season for {text.title()}"
+        context.bot.send_photo(chat_id=update.effective_chat.id, photo=PIC_URL, caption=caption, parse_mode='HTML')
+
 
     seasons = series.get("seasons", {})
     if not seasons:
         update.message.reply_text("No seasons found for this series.")
         return
 
+
     keyboard = []
+    # Add "All Episodes" button at top
+    keyboard.append([InlineKeyboardButton("All Episodes", callback_data=f"all_episodes|{series['name']}")])
     for season_name in sorted(seasons.keys()):
         keyboard.append(
             [InlineKeyboardButton(season_name, callback_data=f"season|{series['name']}|{season_name}")]
@@ -221,6 +244,7 @@ def handle_series_query(update: Update, context: CallbackContext) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(f"Select Season for {series['name']}:", reply_markup=reply_markup)
 
+
 # Handle button callbacks
 def button_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
@@ -228,9 +252,11 @@ def button_handler(update: Update, context: CallbackContext) -> None:
     data = query.data
     parts = data.split("|")
 
+
     if len(parts) < 2:
         query.edit_message_text(text="Invalid action.")
         return
+
 
     action = parts[0]
     series_name = parts[1]
@@ -239,7 +265,11 @@ def button_handler(update: Update, context: CallbackContext) -> None:
         query.edit_message_text(text="Series data not found.")
         return
 
+
     if action == "season":
+        if len(parts) < 3:
+            query.edit_message_text(text="Invalid season action.")
+            return
         season_name = parts[2]
         seasons = series.get("seasons", {})
         season = seasons.get(season_name)
@@ -252,16 +282,20 @@ def button_handler(update: Update, context: CallbackContext) -> None:
             return
 
         keyboard = []
+        # Add "All Episodes" button
+        keyboard.append([InlineKeyboardButton("All Episodes", callback_data=f"all_episodes|{series['name']}|{season_name}")])
         for ep_name in sorted(episodes.keys()):
             keyboard.append(
                 [InlineKeyboardButton(ep_name, callback_data=f"episode|{series['name']}|{season_name}|{ep_name}")]
             )
-        keyboard.append([InlineKeyboardButton("Send All Episodes", callback_data=f"all_episodes|{series['name']}|{season_name}")])
-
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.edit_message_text(text=f"Select Episode for {season_name}:", reply_markup=reply_markup)
 
+
     elif action == "episode":
+        if len(parts) < 4:
+            query.edit_message_text(text="Invalid episode action.")
+            return
         season_name = parts[2]
         ep_name = parts[3]
         seasons = series.get("seasons", {})
@@ -280,41 +314,78 @@ def button_handler(update: Update, context: CallbackContext) -> None:
             return
 
         keyboard = []
-        for quality_name in ["1080p", "720p"]:
-            if quality_name in qualities:
-                keyboard.append(
-                    [InlineKeyboardButton(quality_name, callback_data=f"quality|{series['name']}|{season_name}|{ep_name}|{quality_name}")]
-                )
-
+        for quality_name in sorted(qualities.keys()):
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        quality_name,
+                        callback_data=f"quality|{series['name']}|{season_name}|{ep_name}|{quality_name}",
+                    )
+                ]
+            )
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.edit_message_text(text=f"Select Quality for {ep_name}:", reply_markup=reply_markup)
 
     elif action == "all_episodes":
-        season_name = parts[2]
-        episodes = series["seasons"].get(season_name, {}).get("episodes", {})
-        if not episodes:
-            query.edit_message_text(text="No episodes found in this season.")
-            return
+        chat_id = query.message.chat_id
+        user_id = query.from_user.id
 
-        query.edit_message_text(text=f"Sending all episodes for {season_name}...")
 
-        for ep_name, episode in episodes.items():
-            qualities = episode.get("qualities", {})
-            for quality_name, file_id_or_url in qualities.items():
-                try:
-                    if file_id_or_url.startswith("http://") or file_id_or_url.startswith("https://"):
-                        context.bot.send_message(
-                            chat_id=query.from_user.id,
-                            text=f"{ep_name} ({season_name}) - {quality_name}:\n{file_id_or_url}"
-                        )
-                    else:
-                        context.bot.send_document(chat_id=query.from_user.id, document=file_id_or_url)
-                except Exception as e:
-                    logger.error(f"Error sending file {ep_name} {quality_name}: {e}")
+        if len(parts) == 3:
+            season_name = parts[2]
+            episodes = series["seasons"].get(season_name, {}).get("episodes", {})
+            if not episodes:
+                query.edit_message_text(text="No episodes found in this season.")
+                return
 
-        context.bot.send_message(chat_id=query.from_user.id, text=f"All episodes for {season_name} sent to your private chat.")
+
+            query.edit_message_text(text=f"Sending all episodes for {season_name}...")
+
+
+            for ep_name, episode in episodes.items():
+                qualities = episode.get("qualities", {})
+                for quality_name, file_id_or_url in qualities.items():
+                    try:
+                        if file_id_or_url.startswith("http://") or file_id_or_url.startswith("https://"):
+                            context.bot.send_message(
+                                chat_id=user_id,
+                                text=f"{ep_name} ({season_name}) - {quality_name}:\n{file_id_or_url}"
+                            )
+                        else:
+                            context.bot.send_document(chat_id=user_id, document=file_id_or_url)
+                    except Exception as e:
+                        logger.error(f"Error sending file {ep_name} {quality_name}: {e}")
+
+
+            context.bot.send_message(chat_id=chat_id, text=f"All episodes for {season_name} sent to your private chat.")
+
+
+        else:
+            query.edit_message_text(text="Sending all episodes for all seasons...")
+
+
+            for season_name, season in series.get("seasons", {}).items():
+                episodes = season.get("episodes", {})
+                for ep_name, episode in episodes.items():
+                    qualities = episode.get("qualities", {})
+                    for quality_name, file_id_or_url in qualities.items():
+                        try:
+                            if file_id_or_url.startswith("http://") or file_id_or_url.startswith("https://"):
+                                context.bot.send_message(
+                                    chat_id=user_id,
+                                    text=f"{ep_name} ({season_name}) - {quality_name}:\n{file_id_or_url}"
+                                )
+                            else:
+                                context.bot.send_document(chat_id=user_id, document=file_id_or_url)
+                        except Exception as e:
+                            logger.error(f"Error sending file {ep_name} {quality_name}: {e}")
+
+            context.bot.send_message(chat_id=chat_id, text="All episodes for all seasons sent to your private chat.")
 
     elif action == "quality":
+        if len(parts) < 5:
+            query.edit_message_text(text="Invalid quality action.")
+            return
         season_name = parts[2]
         ep_name = parts[3]
         quality_name = parts[4]
@@ -357,6 +428,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
 
 def error_handler(update: object, context: CallbackContext) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
+
 
 def main():
     updater = Updater(BOT_TOKEN)
