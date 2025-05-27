@@ -37,7 +37,7 @@ db = client.series_bot_db
 series_collection = db.series
 
 # Set your admin Telegram user IDs here (replace with actual admin user IDs)
-ADMIN_IDS = {5387919847}  # Replace with your real Telegram user ID(s)
+ADMIN_IDS = {1426582599}  # Replace with your real Telegram user ID(s)
 
 # Helper function: Check if user is admin
 def is_admin(user_id: int) -> bool:
