@@ -257,7 +257,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
                 [InlineKeyboardButton(ep_name, callback_data=f"episode|{series['name']}|{season_name}|{ep_name}")]
             )
         keyboard.append([InlineKeyboardButton("Send All Episodes", callback_data=f"all_episodes|{series['name']}|{season_name}")])
-        
+
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.edit_message_text(text=f"Select Episode for {season_name}:", reply_markup=reply_markup)
 
@@ -285,7 +285,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
                 keyboard.append(
                     [InlineKeyboardButton(quality_name, callback_data=f"quality|{series['name']}|{season_name}|{ep_name}|{quality_name}")]
                 )
-        
+
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.edit_message_text(text=f"Select Quality for {ep_name}:", reply_markup=reply_markup)
 
