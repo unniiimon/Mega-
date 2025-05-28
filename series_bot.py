@@ -16,6 +16,8 @@ from telegram.ext import (
 )
 from pymongo import MongoClient
 from telegram.error import BadRequest
+from keep_alive import keep_alive
+keep_alive()
 
 # Enable logging
 logging.basicConfig(
@@ -25,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 MONGO_URI = os.environ.get("MONGO_URI")
-PORT = int(os.environ.get("PORT", "8443"))
+PORT = int(os.environ.get("PORT", "8080"))
 PIC_URL = os.environ.get("PIC_URL")
 FORCE_SUB_CHANNEL = os.environ.get("FORCE_SUB_CHANNEL")  # e.g. @YourChannel
 CUSTOM_FILE_CAPTION = os.environ.get("CUSTOM_FILE_CAPTION")  # Optional
