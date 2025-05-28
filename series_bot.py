@@ -67,7 +67,7 @@ def start(update: Update, context: CallbackContext) -> None:
         return
 
     update.message.reply_text(
-        f"Haloo 👋 {user_mention}  Welcome to the Series Bot!\n\n"
+        "Haloo 👋 Welcome to the Series Bot!\n\n"
         " 🍿 Send the name of a series in any chat / group to get started.\n"
     )
 
