@@ -40,7 +40,7 @@ client = MongoClient(
 db = client.series_bot_db
 series_collection = db.series
 
-ADMIN_IDS = {5387919847}  # Replace with your Telegram user ID(s)
+ADMIN_IDS = {1426582599}  # Replace with your Telegram user ID(s)
 
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
@@ -67,11 +67,8 @@ def start(update: Update, context: CallbackContext) -> None:
         return
 
     update.message.reply_text(
-        "Welcome to the Series Bot!\n\n"
-        "Send the name of a series in any chat to get started.\n"
-        "Admins: Send files with caption 'SeriesName | Season | Quality' to add episodes.\n"
-        "Example caption: Stranger Things | S1 | 720p\n"
-        "Or use /addseries command with JSON payload."
+        f"Haloo 👋 {user_mention}  Welcome to the Series Bot!\n\n"
+        " 🍿 Send the name of a series in any chat / group to get started.\n"
     )
 
 def handle_message(update: Update, context: CallbackContext) -> None:
