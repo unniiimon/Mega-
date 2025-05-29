@@ -228,7 +228,7 @@ def handle_series_query(update: Update, context: CallbackContext) -> None:
 
     if PIC_URL:
         user_mention = update.message.from_user.mention_html()
-        caption = f"Hi {user_mention}, Select Season for {text.title()}"
+        caption = f"Hi {user_mention}, Select Season for {text.title()}\n \n check bot pm <a href='https://t.me/mcseriesbot_bot'> Click here </a> "
         context.bot.send_photo(
             chat_id=update.effective_chat.id, photo=PIC_URL, caption=caption, parse_mode="HTML"
         )
@@ -329,7 +329,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
             return
         quality = parts[2]
 
-        query.edit_message_text(text=f"Sending all episodes in {quality} for all seasons to your private chat...")
+        query.edit_message_text(text=f"Sending all episodes in {quality} for all seasons to your {user_mention} private chat... 😁 check bot PM ")
 
         count_sent = 0
         for season_name, season in series.get("seasons", {}).items():
@@ -342,7 +342,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
                         context.bot.send_document(
                             chat_id=user_id,
                             document=file_id,
-                            caption=CUSTOM_FILE_CAPTION or f"{series_name} - {season_name} - {ep_name} - {quality}",
+                            caption=CUSTOM_FILE_CAPTION or f"{series_name} - {season_name} - {ep_name} - {quality} \n \n 🍿Join our group :- @mcserieshub\n🍿Join our group :- @mcserieshub",
                         )
                         count_sent += 1
                     except Exception as e:
@@ -378,7 +378,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
         season = series.get("seasons", {}).get(season_name, {})
         episodes = season.get("episodes", {})
 
-        query.edit_message_text(text=f"Sending all episodes in {quality} for season {season_name} to your private chat...")
+        query.edit_message_text(text=f"Sending all episodes in {quality} for season {season_name} to your private chat... 😁check bot pm ")
 
         for ep_name, ep_data in episodes.items():
             qualities = ep_data.get("qualities", {})
@@ -388,7 +388,7 @@ def button_handler(update: Update, context: CallbackContext) -> None:
                     context.bot.send_document(
                         chat_id=user_id,
                         document=file_id,
-                        caption=CUSTOM_FILE_CAPTION or f"{series_name} - {season_name} - {ep_name} - {quality}",
+                        caption=CUSTOM_FILE_CAPTION or f"{series_name} - {season_name} - {ep_name} - {quality}\n\n 🍿Join our group :- @mcserieshub\n🍿Join our group :- @mcserieshub",
                     )
                 except Exception as e:
                     logger.error(f"Error sending file: {e}")
