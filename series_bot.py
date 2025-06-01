@@ -52,11 +52,6 @@ def force_subscribe_check(update: Update, context: CallbackContext) -> bool:
         return member.status in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR, ChatMember.CREATOR]
     except BadRequest as e:
         logger.error(f"Force subscribe error: {e}")
-        update.message.reply_text("There was an error checking your subscription status. Please try again later.")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        update.message.reply_text("An unexpected error occurred. Please try again later.")
         return False
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -106,7 +101,7 @@ def get_next_episode_number(series_name, season):
             ep_num = int(ep.lstrip("E"))
             if ep_num > max_ep:
                 max_ep = ep_num
-        except ValueError:
+        except:
             continue
     return max_ep + 1
 
@@ -211,7 +206,7 @@ def button_handler(update: Update, context: CallbackContext):
         query.edit_message_text("Series not found.")
         return
 
-    # Implement actions (season, all_seasons, all_episodes, all_quality, episode, quality)
+    # implement actions (season, all_seasons, all_episodes, all_quality, episode, quality)
     # ... similar to previous implementations ...
 
 def error_handler(update: object, context: CallbackContext) -> None:
