@@ -38,7 +38,7 @@ client = MongoClient(
 db = client.series_bot_db
 series_collection = db.series
 
-ADMIN_IDS = {5387919847}  # Replace with your Telegram user ID(s)
+ADMIN_IDS = {1426582599}  # Replace with your Telegram user ID(s)
 
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
