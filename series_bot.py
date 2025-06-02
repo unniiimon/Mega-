@@ -231,7 +231,7 @@ def button_handler(update: Update, context: CallbackContext):
             [InlineKeyboardButton("🎬 All Episodes", callback_data=f"all_episodes|{series['name']}|{season_name}")]
         ]
         for ep_name in sorted(episodes.keys()):
-            keyboard.append([InlineKeyboardButton(ep_name, callback_data=f"📂episode|{series['name']}|{season_name}|{ep_name}")])
+            keyboard.append([InlineKeyboardButton(ep_name, callback_data=f"episode|{series['name']}|{season_name}|{ep_name}")])
 
         reply_markup = InlineKeyboardMarkup(keyboard)
         query.edit_message_text(text=f"Select Episode for {season_name}:", reply_markup=reply_markup)
@@ -335,7 +335,7 @@ def button_handler(update: Update, context: CallbackContext):
         if not qualities:
             query.edit_message_text(text="No qualities found for this episode.")
             return
-        keyboard = [InlineKeyboardButton(q, callback_data=f"💎quality|{series['name']}|{season_name}|{ep_name}|{q}") for q in sorted(qualities.keys())]
+        keyboard = [InlineKeyboardButton(q, callback_data=f"quality|{series['name']}|{season_name}|{ep_name}|{q}") for q in sorted(qualities.keys())]
         reply_markup = InlineKeyboardMarkup([[btn] for btn in keyboard])
         query.edit_message_text(text=f"Select Quality for {ep_name}:", reply_markup=reply_markup)
 
